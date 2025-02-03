@@ -1,4 +1,5 @@
 import os
+import gdown  # For downloading the model from Google Drive
 import numpy as np
 import cv2
 from flask import Flask, request, render_template, redirect, url_for
@@ -8,16 +9,28 @@ from werkzeug.utils import secure_filename
 # Initialize Flask app
 app = Flask(__name__)
 
-# Load the trained model
-model = load_model("face_mask_detector.keras")
-
-# Define upload folder and allowed extensions
+# Define upload folder
 UPLOAD_FOLDER = "static/uploads"
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-
-# Ensure the upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Google Drive file ID for the model (Replace with your actual file ID)
+MODEL_FILE_ID = "1nyJriPSHilWTz0MEXkerD_wzpfEGLgmC"  # Replace with your actual Google Drive file ID
+MODEL_PATH = "face_mask_detector.keras"
+
+def download_model():
+    """Download the model from Google Drive if not found locally."""
+    if not os.path.exists(MODEL_PATH):
+        print("Downloading model from Google Drive...")
+        gdown.download(f"https://drive.google.com/uc?id={MODEL_FILE_ID}", MODEL_PATH, quiet=False)
+        print("Download complete!")
+
+# Ensure the model is available
+download_model()
+
+# Load the model
+model = load_model(MODEL_PATH)
 
 def allowed_file(filename):
     """Check if the file has an allowed extension."""
@@ -38,9 +51,9 @@ def upload_image():
     if request.method == "POST":
         if "file" not in request.files:
             return redirect(request.url)
-        
+
         file = request.files["file"]
-        
+
         if file.filename == "":
             return redirect(request.url)
 
@@ -53,11 +66,11 @@ def upload_image():
             img = preprocess_image(file_path)
             prediction = model.predict(img)
 
-            # Interpret the result
-            result = "No Mask Detected ❌" if prediction[0][0] < 0 else "Mask Detected ✅"
+            # ✅ Fix the prediction logic:
+            result = "No Mask Detected ❌" if prediction[0][0] < 0.5 else "Mask Detected ✅"
 
             return render_template("index.html", filename=filename, result=result)
-    
+
     return render_template("index.html", filename=None, result=None)
 
 @app.route("/uploads/<filename>")
@@ -66,4 +79,5 @@ def uploaded_file(filename):
     return redirect(url_for("static", filename="uploads/" + filename))
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))  # Allow Railway to assign the port
+    app.run(host="0.0.0.0", port=port)
