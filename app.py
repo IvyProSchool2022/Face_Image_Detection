@@ -9,7 +9,7 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 
 # Load the trained model
-model = load_model(r"F:\datasets\Face_Mask_Detection\face_mask_detector.keras")
+model = load_model("face_mask_detector.keras")
 
 # Define upload folder and allowed extensions
 UPLOAD_FOLDER = "static/uploads"
