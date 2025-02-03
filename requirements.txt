@@ -1,7 +1,7 @@
-Flask
+opencv-python-headless
+gunicorn
 tensorflow
 numpy
-opencv-python
 werkzeug
+Flask
 gdown
-gunicorn
